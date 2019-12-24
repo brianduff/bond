@@ -1,0 +1,6 @@
+{
+  "files.associations": {
+    "BUCK": "bazel",
+    "jni.h": "c"
+  }
+}
