@@ -2,5 +2,8 @@
   "files.associations": {
     "BUCK": "bazel",
     "jni.h": "c"
+  },
+  "files.exclude": {
+    "bazel-*/": true,
   }
 }
