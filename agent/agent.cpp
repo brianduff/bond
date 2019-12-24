@@ -1,4 +1,5 @@
 #include <jvmti.h>
+#include <cstring>
 #include <iostream>
 
 static bool inMethod = false;
@@ -65,7 +66,7 @@ Agent_OnLoad(JavaVM *vm, char *options, void *reserved) {
   }
 
   jvmtiCapabilities capabilities;
-  (void) memset(&capabilities, 0, sizeof(jvmtiCapabilities));
+  (void) std::memset(&capabilities, 0, sizeof(jvmtiCapabilities));
 
   capabilities.can_generate_method_entry_events = 1;
 
@@ -80,7 +81,7 @@ Agent_OnLoad(JavaVM *vm, char *options, void *reserved) {
   }
 
   jvmtiEventCallbacks eventCallbacks;
-  (void) memset(&eventCallbacks, 0, sizeof(eventCallbacks));
+  (void) std::memset(&eventCallbacks, 0, sizeof(eventCallbacks));
   eventCallbacks.MethodEntry = &callbackMethodEntryEvent;
 
   if (!checkError(jvmti->SetEventCallbacks(&eventCallbacks, (jint) sizeof(eventCallbacks)))) {
