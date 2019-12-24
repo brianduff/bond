@@ -1,6 +1,8 @@
 #include <jvmti.h>
 #include <iostream>
 
+static bool inMethod = false;
+
 static bool checkError(jvmtiError errNum) {
   if (errNum == JVMTI_ERROR_NONE) {
     return true;
@@ -9,17 +11,46 @@ static bool checkError(jvmtiError errNum) {
   return false;
 }
 
+jstring getClassName(JNIEnv* env, jclass cls) {
+  jclass clazz = env->GetObjectClass(cls);
+  jmethodID methodId = env->GetMethodID(clazz, "getName", "()Ljava/lang/String;");
+  env->DeleteLocalRef(clazz);
+
+  if (!methodId) {
+    return NULL;
+  }
+  return (jstring) env->CallObjectMethod(cls, methodId);
+}
+
 void JNICALL
 callbackMethodEntryEvent(jvmtiEnv *jvmti,
-            JNIEnv* jni_env,
+            JNIEnv* env,
             jthread thread,
             jmethodID method) {
+  if (inMethod) return;
+  inMethod = true;
+  jclass declaringClassId;
+  jvmti->GetMethodDeclaringClass(method, &declaringClassId);
+
+  jstring className = getClassName(env, declaringClassId);
+  const char *classNameNative;
+  if (className) {
+    classNameNative = env->GetStringUTFChars(className, 0);
+  } else {
+    classNameNative = "<UNKNOWN>";
+  }
+
   char *methodName;
   char *sig;
   char *gsig;
-  if (!checkError(jvmti->GetMethodName(method, &methodName, &sig, &gsig))) {
-    std::cout << "Called " << methodName << "\n";
+  jvmtiError err = jvmti->GetMethodName(method, &methodName, &sig, &gsig);
+  std::cout << "Called " << classNameNative << "." << methodName << sig << "\n";
+
+  env->DeleteLocalRef(declaringClassId);
+  if (className) {
+    env->ReleaseStringUTFChars(className, classNameNative);
   }
+  inMethod = false;
 }
 
 JNIEXPORT jint JNICALL 
@@ -56,6 +87,8 @@ Agent_OnLoad(JavaVM *vm, char *options, void *reserved) {
     std::cout << "Failed to set event callbacks\n";
     return JNI_ERR;    
   }
+
+  std::cout << "Registered all callbacks. Whee!\n";
 
   return JNI_OK;
 }
